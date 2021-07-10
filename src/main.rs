@@ -41,6 +41,11 @@ impl Line {
         (a, b, c)
     }
 
+    fn get_abc_f64(&self) -> (f64, f64, f64) {
+        let (a, b, c) = self.get_abc();
+        (a as f64, b as f64, c as f64)
+    }
+
     fn draw(&self) {
         draw_line(self.from.x, self.from.y, self.to.x, self.to.y, 2.0, BLACK);
     }
@@ -75,8 +80,8 @@ pub mod graphics {
 
 fn line_circle_intersection(line: &Line, circle: &Circle) -> Vec<Dot> {
     let mut out: Vec<Dot> = Vec::new();
-    let (a, b, c) = line.get_abc();
-    let (x, y, r) = (circle.center.x, circle.center.y, circle.r);
+    let (a, b, c) = line.get_abc_f64();
+    let (x, y, r) = (circle.center.x as f64, circle.center.y as f64, circle.r as f64);
 
     let a_y = a.powi(2) + b.powi(2);
     let b_y = 2.0*b*c + 2.0*a*x*b - 2.0*a.powi(2)*y;
@@ -88,15 +93,16 @@ fn line_circle_intersection(line: &Line, circle: &Circle) -> Vec<Dot> {
     let c_x = b.powi(2)*x.powi(2) + c.powi(2) + 2.0*b*y*c + y.powi(2)*b.powi(2) - r.powi(2)*b.powi(2);
     let discr_x = b_x.powi(2) - 4.0*a_x*c_x;
 
+    if is_mouse_button_pressed(MouseButton::Left) {
+        println!("discr_y: {}, discr_x: {}", discr_y, discr_x);
+    }
+
+    let y1: f64;
+    let y2: f64;
+    let x1: f64;
+    let x2: f64;
     if discr_y > 0.0 && discr_x > 0.0 {
-        let y1: f32;
-        let y2: f32;
-        let x1: f32;
-        let x2: f32;
         if a != 0.0 {
-            if is_mouse_button_pressed(MouseButton::Left) {
-                println!("discr: {}", discr_x);
-            }
             y1 = (-b_y + discr_y.sqrt()) / (2.0*a_y);
             y2 = (-b_y - discr_y.sqrt()) / (2.0*a_y);
             x1 = (-b*y1 - c) / a;
@@ -108,13 +114,13 @@ fn line_circle_intersection(line: &Line, circle: &Circle) -> Vec<Dot> {
             y1 = (-a*x1 - c) / b;
             y2 = (-a*x2 - c) / b;
         }
-        out.push(Dot::new(x1, y1));
-        out.push(Dot::new(x2, y2));
+        out.push(Dot::new(x1 as f32, y1 as f32));
+        out.push(Dot::new(x2 as f32, y2 as f32));
     }
-    else if discr_y == 0.0 {
-        let y1 = -b_y / (2.0*a_y);
-        let x1 = -b_x / (2.0*a_x);
-        out.push(Dot::new(x1, y1));
+    else if discr_x >= 0.0 && discr_y >= 0.0 {
+        y1 = -b_y / (2.0*a_y);
+        x1 = -b_x / (2.0*a_x);
+        out.push(Dot::new(x1 as f32, y1 as f32));
     }
 
     out
