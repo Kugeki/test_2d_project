@@ -160,8 +160,7 @@ async fn main() {
             println!("x: {}, y: {}.\n", x, y);
             println!("line: {:?}", line.get_abc());
         }
-
-        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
+        draw_text(&format!("IT WORKS! FPS: {}.", macroquad::time::get_fps())[..], 20.0, 20.0, 30.0, DARKGRAY);
 
         next_frame().await
     }
