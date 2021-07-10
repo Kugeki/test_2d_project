@@ -32,11 +32,12 @@ impl Line {
         let mut b = x2 - x1;
         let mut c = x1 * y2 - x2 * y1;
 
-        if a != 0.0 {
+        if a != 0.0 && b != 0.0 && c != 0.0{
             b /= a;
             c /= a;
             a = 1.0;
         }
+
         (a, b, c)
     }
 
@@ -56,7 +57,7 @@ impl Circle {
     }
 
     fn draw(&self) {
-        draw_circle_lines(self.center.x, self.center.y, self.r, 2.0, BLACK);
+        draw_poly_lines(self.center.x, self.center.y, 255, self.r, 2.0*std::f32::consts::PI, 2.0, BLACK);
     }
 }
 
@@ -88,26 +89,27 @@ fn line_circle_intersection(line: &Line, circle: &Circle) -> Vec<Dot> {
     let discr_x = b_x.powi(2) - 4.0*a_x*c_x;
 
     if discr_y > 0.0 && discr_x > 0.0 {
+        let y1: f32;
+        let y2: f32;
+        let x1: f32;
+        let x2: f32;
         if a != 0.0 {
-            if a == 1.0 && is_mouse_button_pressed(MouseButton::Left) {
+            if is_mouse_button_pressed(MouseButton::Left) {
                 println!("discr: {}", discr_x);
             }
-            let y1 = (-b_y + discr_y.sqrt()) / (2.0*a_y);
-            let y2 = (-b_y - discr_y.sqrt()) / (2.0*a_y);
-            let x1 = (-b*y1 - c) / a;
-            let x2 = (-b*y2 - c) / a;
-            out.push(Dot::new(x1, y1));
-            out.push(Dot::new(x2, y2));
+            y1 = (-b_y + discr_y.sqrt()) / (2.0*a_y);
+            y2 = (-b_y - discr_y.sqrt()) / (2.0*a_y);
+            x1 = (-b*y1 - c) / a;
+            x2 = (-b*y2 - c) / a;
         }
-
-        if a == 0.0 {
-            let x1 = (-b_x + discr_x.sqrt()) / (2.0*a_x);
-            let x2 = (-b_x - discr_x.sqrt()) / (2.0*a_x);
-            let y1 = (-a*x1 - c) / b;
-            let y2 = (-a*x2 - c) / b;
-            out.push(Dot::new(x1, y1));
-            out.push(Dot::new(x2, y2));
+        else {
+            x1 = (-b_x + discr_x.sqrt()) / (2.0*a_x);
+            x2 = (-b_x - discr_x.sqrt()) / (2.0*a_x);
+            y1 = (-a*x1 - c) / b;
+            y2 = (-a*x2 - c) / b;
         }
+        out.push(Dot::new(x1, y1));
+        out.push(Dot::new(x2, y2));
     }
     else if discr_y == 0.0 {
         let y1 = -b_y / (2.0*a_y);
@@ -118,7 +120,16 @@ fn line_circle_intersection(line: &Line, circle: &Circle) -> Vec<Dot> {
     out
 }
 
-#[macroquad::main("BasicShapes")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "2d".to_owned(),
+        fullscreen: false,
+        high_dpi: true,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf())]
 async fn main() {
     loop {
         clear_background(WHITE);
