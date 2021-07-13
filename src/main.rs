@@ -192,6 +192,16 @@ impl Line {
         let (_, to) = self.get_default_from_to();
         draw_line(from.x, from.y, to.x, to.y, 2.0, BLACK);
     }
+
+    fn get_intersections_with_line() -> Vec<Dot> {
+        todo!()
+    }
+
+    fn get_reflected_line(&self, line: &Line) -> Line{
+        let target_angle = line.get_angle_with_line(&self);
+        let reflected_line = self.get_rotated_line_by_angle(target_angle);
+        reflected_line
+    }
 }
 
 struct Circle {
@@ -212,6 +222,11 @@ impl Circle {
         let radius_line = Line::new(&self.center, &dot);
         let tangent = radius_line.get_invert_line().get_rotated_line_by_angle(std::f32::consts::PI / 2.0);
         tangent
+    }
+
+    fn get_reflected_line(&self, line: &Line, intersection_dot: Dot) -> Line {
+        let tangent = self.get_tangent_line(intersection_dot);
+        tangent.get_reflected_line(line)
     }
 }
 
@@ -309,18 +324,8 @@ fn example1(cursor: Dot, debug: bool) {
         near_dot.draw(RED);
         let line_to_circle = Line::new(&from_line_dot, &near_dot);
         line_to_circle.draw_with_bounds();
-        let radius_line = Line::new(&circle.center, &near_dot);
-        radius_line.draw_with_bounds();
-        let tangent = circle.get_tangent_line(near_dot);
-        
-        let target_angle = line_to_circle.get_angle_with_line(&tangent);
-
-        let reflected_line = tangent.get_rotated_line_by_angle(target_angle);
+        let reflected_line = circle.get_reflected_line(&line_to_circle, near_dot);
         reflected_line.draw_with_to_bound();
-
-        if debug {
-            println!("angle: {}", reflected_line.get_angle() * 180.0 / std::f32::consts::PI);
-        }
     }
     else {
         line.draw_with_bounds();
