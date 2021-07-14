@@ -42,6 +42,62 @@ impl Dot {
     }
 }
 
+struct InteractiveDot {
+    dot: Dot,
+    circle: Circle,
+    is_move: bool,
+    is_mouse_on: bool,
+}
+
+impl InteractiveDot {
+    fn new(dot: Dot) -> InteractiveDot {
+        InteractiveDot { dot, circle: Circle::new(dot, 15.0), is_move: false, is_mouse_on: false}
+    }
+
+    fn draw(&mut self) {
+        let mut size = 7.0;
+        let mut alpha = 0.5;
+        if self.is_mouse_on {
+            size = 10.0;
+            alpha = 1.0;
+            self.is_mouse_on = false;
+        }
+        draw_circle(self.dot.x, self.dot.y, size, Color::new(0.00, 0.89, 0.19, alpha));
+        draw_circle(self.dot.x, self.dot.y, size * 5.0 / 7.0, WHITE);
+    }
+
+    fn set_x(&mut self, x: f32) {
+        self.dot.x = x;
+        self.circle.center.x = x;
+    }
+
+    fn set_y(&mut self, y: f32) {
+        self.dot.y = y;
+        self.circle.center.y = y;
+    }
+
+    fn set_is_move(&mut self, is_move: bool) {
+        self.is_move = is_move;
+    }
+
+    fn get_x(&self) -> f32 {
+        self.dot.x
+    }
+
+    fn get_y(&self) -> f32 {
+        self.dot.y
+    }
+
+    fn get_is_move(&self) -> bool {
+        self.is_move
+    }
+
+    fn is_dot_on(&mut self, dot: Dot) -> bool{
+        self.circle.center = self.dot;
+        self.circle.is_in_circle(dot)
+    }
+}
+
 pub struct Line {
     a: f32,
     b: f32,
@@ -174,7 +230,14 @@ impl Line {
 
     fn is_dot_have_same_range(&self, dot: Dot) -> bool {
         let (from, to) = self.get_from_to();
-        from.x <= dot.x && from.y >= dot.y && to.x >= dot.x && to.y <= dot.y
+        
+        (from.x <= dot.x && from.y >= dot.y && to.x >= dot.x && to.y <= dot.y) ||
+        (from.x >= dot.x && from.y >= dot.y && to.x <= dot.x && to.y <= dot.y) ||
+        (from.x <= dot.x && from.y <= dot.y && to.x >= dot.x && to.y >= dot.y) ||
+        (from.x >= dot.x && from.y <= dot.y && to.x <= dot.x && to.y >= dot.y)
+        
+        /*distance_between_dots(&from, &to) + 0.01 >= distance_between_dots(&dot, &from) + distance_between_dots(&dot, &to) &&
+        distance_between_dots(&from, &to) - 0.01 <= distance_between_dots(&dot, &from) + distance_between_dots(&dot, &to)*/
     }
 
     fn draw(&self) {
@@ -237,10 +300,13 @@ impl Circle {
             let reflected_line = self.get_reflected_line_by_intersection_dot(&line, near_dot);
             Some(reflected_line)
         }
-        else
-        {
+        else {
             None
         }
+    }
+
+    fn is_in_circle(&self, dot: Dot) -> bool {
+        ((dot.x - self.center.x) as f64).powi(2) + ((dot.y - self.center.y) as f64).powi(2) <= (self.r as f64).powi(2)
     }
 }
 
@@ -279,7 +345,11 @@ fn line_circle_intersection(line: &Line, circle: &Circle) -> Vec<Dot> {
     let y2: f64;
     let x1: f64;
     let x2: f64;
-    if discr_y > 0.0 && discr_x > 0.0 {
+    if (discr_y >= 0.0 || discr_x >= 0.0) &&
+        (discr_x != 0.0 || discr_y != 0.0)
+        //(discr_y == 0.0 && a == 0.0) || 
+        //(discr_x == 0.0 && b == 0.0) 
+        {
         if a != 0.0 {
             y1 = (-b_y + discr_y.sqrt()) / (2.0*a_y);
             y2 = (-b_y - discr_y.sqrt()) / (2.0*a_y);
@@ -320,11 +390,12 @@ fn distance_between_dots(d1: &Dot, d2: &Dot) -> f32{
     square.sqrt()
 }
 
-fn example1(cursor: Dot, debug: bool) {
-    let circle = Circle::new(Dot::new(400.0, 300.0), 100.0);
+fn example1(cursor: Dot, debug: bool, intercative_dots: &Vec<InteractiveDot>) {
+    let circle = Circle::new(intercative_dots[0].dot, 100.0);
     circle.draw();
+    let cursor = intercative_dots[2].dot;
 
-    let from_line_dot = Dot::new(100.0, 400.0);
+    let from_line_dot = intercative_dots[1].dot;
     let line = Line::new(&from_line_dot, &cursor);
 
     let dots: Vec<Dot> = line_circle_intersection(&line, &circle);
@@ -345,22 +416,26 @@ fn example1(cursor: Dot, debug: bool) {
         line.draw_with_bounds();
     }*/
     
-    
-    
     match circle.get_reflected_line(&line) {
         Some(x) => {
-            let (from, _) = x.get_from_to();
-            let near_dot = from;
-            near_dot.draw(RED);
-            let line_to_circle = Line::new(&from_line_dot, &near_dot);
-            line_to_circle.draw_with_bounds();
-            x.draw_with_to_bound();
+            if !circle.is_in_circle(from_line_dot) {
+                let (from, _) = x.get_from_to();
+                let near_dot = from;
+                near_dot.draw(RED);
+                let line_to_circle = Line::new(&from_line_dot, &near_dot);
+                line_to_circle.draw_with_bounds();
+                x.draw_with_to_bound();
+            }
+            else {
+                line.draw_with_bounds();
+            }
         },
         None => line.draw_with_bounds(),
     }
 
     if is_mouse_button_pressed(MouseButton::Left) {
-        println!("x: {}, y: {}.\n", cursor.x, cursor.y);
+        let (x, y) = mouse_position();
+        println!("x: {}, y: {}.\n", x, y);
         println!("line: {:?}", line.get_abc());
     }
 }
@@ -377,6 +452,11 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf())]
 async fn main() {
     // let mut angle = std::f32::consts::PI / 4.0;
+    let mut intercative_dots: Vec<InteractiveDot> = Vec::new();
+    intercative_dots.push(InteractiveDot::new(Dot::new(400.0, 300.0)));
+    intercative_dots.push(InteractiveDot::new(Dot::new(100.0, 400.0)));
+    intercative_dots.push(InteractiveDot::new(Dot::new(200.0, 100.0)));
+    
     loop {
         clear_background(WHITE);
         let debug = is_mouse_button_pressed(MouseButton::Left);
@@ -384,6 +464,28 @@ async fn main() {
         let (x, y): (f32, f32) = mouse_position();
         let cursor = Dot { x, y };
         cursor.draw(BLACK);
+
+        let mut some_is_in_move = false;
+        for i_d in &mut intercative_dots {
+            if i_d.is_dot_on(cursor) {
+                i_d.is_mouse_on = true;
+            }
+
+            if is_mouse_button_pressed(MouseButton::Left) && i_d.is_dot_on(cursor) && !some_is_in_move {
+                i_d.is_move = true;
+                some_is_in_move = true;
+            }
+
+            if is_mouse_button_released(MouseButton::Left) {
+                i_d.is_move = false;
+            }
+
+            if i_d.is_move {
+                i_d.set_x(cursor.x);
+                i_d.set_y(cursor.y);
+            }
+            i_d.draw();
+        }
 
         /*
         let (_, b) = mouse_wheel();
@@ -394,7 +496,7 @@ async fn main() {
         let line = line.get_rotated_line_by_angle(angle);
         line.draw_with_bounds(); */
 
-        example1(cursor, debug);
+        example1(cursor, debug, &intercative_dots);
         
         draw_text(&format!("IT WORKS! FPS: {}.", macroquad::time::get_fps())[..], 20.0, 20.0, 30.0, DARKGRAY);
 
