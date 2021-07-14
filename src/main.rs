@@ -224,9 +224,23 @@ impl Circle {
         tangent
     }
 
-    fn get_reflected_line(&self, line: &Line, intersection_dot: Dot) -> Line {
+    fn get_reflected_line_by_intersection_dot(&self, line: &Line, intersection_dot: Dot) -> Line {
         let tangent = self.get_tangent_line(intersection_dot);
         tangent.get_reflected_line(line)
+    }
+
+    fn get_reflected_line(&self, line: &Line) -> Option<Line> {
+        let dots: Vec<Dot> = line_circle_intersection(&line, &self);
+        if dots.len() > 0 {
+            let (from_line_dot, _) = line.get_from_to();
+            let near_dot = from_line_dot.nearest_dot(&dots);
+            let reflected_line = self.get_reflected_line_by_intersection_dot(&line, near_dot);
+            Some(reflected_line)
+        }
+        else
+        {
+            None
+        }
     }
 }
 
@@ -318,17 +332,31 @@ fn example1(cursor: Dot, debug: bool) {
     for dot in &dots {
         dot.draw(BLUE);
     }
-
+/*
     if dots.len() > 0 {
         let near_dot = from_line_dot.nearest_dot(&dots);
         near_dot.draw(RED);
         let line_to_circle = Line::new(&from_line_dot, &near_dot);
         line_to_circle.draw_with_bounds();
-        let reflected_line = circle.get_reflected_line(&line_to_circle, near_dot);
+        let reflected_line = circle.get_reflected_line_by_intersection_dot(&line_to_circle, near_dot);
         reflected_line.draw_with_to_bound();
     }
     else {
         line.draw_with_bounds();
+    }*/
+    
+    
+    
+    match circle.get_reflected_line(&line) {
+        Some(x) => {
+            let (from, _) = x.get_from_to();
+            let near_dot = from;
+            near_dot.draw(RED);
+            let line_to_circle = Line::new(&from_line_dot, &near_dot);
+            line_to_circle.draw_with_bounds();
+            x.draw_with_to_bound();
+        },
+        None => line.draw_with_bounds(),
     }
 
     if is_mouse_button_pressed(MouseButton::Left) {
