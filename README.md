@@ -4,4 +4,4 @@ There is also a simple implementation of user input for moving geometric shapes.
 The project was created for educational purposes to try out the [macroquad](https://github.com/not-fl3/macroquad) library.
 
 # Demostration
-![](https://github.com/Kugeki/test_2d_project/blob/Kugeki-add-readme/preview/demonstation.gif)
+![](https://raw.githubusercontent.com/Kugeki/test_2d_project/main/preview/demonstation.gif)
